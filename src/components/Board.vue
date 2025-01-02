@@ -6,7 +6,7 @@ const gameStore = useGameStore()
 </script>
 
 <template>
-    <div class="Board">
+    <div class="Board" :class="{ 'Board--yakiniku': gameStore.isYakiniku }">
         <div
             v-for="(rowCells, rowIndex) in gameStore.board"
             :key="rowIndex"
@@ -33,6 +33,13 @@ const gameStore = useGameStore()
     flex-wrap: wrap;
     border: 1px solid #222;
     z-index: 1;
+
+    &--yakiniku {
+        background-color: transparent;
+        background: url(/src/assets/images/BGSet.png) no-repeat 0 0;
+        background-size: cover;
+        border: none;
+    }
 
     &__row {
         display: flex;

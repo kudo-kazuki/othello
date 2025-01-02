@@ -14,7 +14,7 @@ import {
     placeStone,
     isGameEnd,
 } from '@/logics/gameRules'
-import { getRandomMove, getAlphaBetaMove } from '@/logics/cpu'
+import { getRandomMove } from '@/logics/cpu'
 import { WorkerInputMessage, WorkerOutputMessage } from '@/workers/cpuWorker'
 
 interface gameStore {
@@ -27,6 +27,8 @@ interface gameStore {
     placeableCells: Array<[number, number]>
     cpuStrong: number
     isCpuThinking: boolean
+    isYakiniku: boolean
+    isYugami: boolean
 }
 
 export const useGameStore = defineStore('game', {
@@ -40,6 +42,8 @@ export const useGameStore = defineStore('game', {
         placeableCells: [],
         cpuStrong: 2,
         isCpuThinking: false,
+        isYakiniku: false,
+        isYugami: false,
     }),
     actions: {
         startGame() {
@@ -65,6 +69,8 @@ export const useGameStore = defineStore('game', {
 
             this.currentColor = this.currentColor === BLACK ? WHITE : BLACK
             this.turn++
+
+            this.setYugami()
 
             // --- 終局判定 ---
             this.isGameEnd = isGameEnd(this.board, this.currentColor, this.turn)
@@ -155,6 +161,41 @@ export const useGameStore = defineStore('game', {
         isPass(): boolean {
             const moves = getPlaceableCells(this.board, this.currentColor)
             return moves.length === 0
+        },
+
+        setYugami() {
+            if (!this.isYugami) {
+                return
+            }
+
+            const body = document.getElementsByTagName('body')[0]
+            const nowStyle = body.style.transform
+                ? body.style.transform
+                : 'skew(0deg, 0deg)'
+            let style = ''
+
+            if (
+                nowStyle == '' ||
+                nowStyle == ' ' ||
+                nowStyle == 'skew(0deg, 0deg)'
+            ) {
+                style = 'skew(0deg, 0deg)'
+            }
+            console.log('style:', style)
+            let xDeg = 0
+            let yDeg = 0
+
+            const nowDeg = nowStyle.split('skew')[1]
+
+            xDeg = parseFloat(nowDeg.split(',')[0].slice(1).split('deg')[0])
+            yDeg = parseFloat(nowDeg.split(',')[0].slice(1).split('deg')[0])
+
+            xDeg += 0.55
+            yDeg += 0.65
+
+            style = 'skew(' + xDeg + 'deg, ' + yDeg + 'deg)'
+
+            body.style.transform = style
         },
     },
 

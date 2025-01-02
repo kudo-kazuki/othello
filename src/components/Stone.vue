@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { BLACK, StoneColor } from '@/logics/board'
+import { useGameStore } from '@/stores/game'
 
 interface Props {
     color: StoneColor
 }
 
 const props = withDefaults(defineProps<Props>(), {})
+
+const gameStore = useGameStore()
 
 const colorName = computed(() => {
     return props.color === BLACK ? 'black' : 'white'
@@ -30,7 +33,12 @@ watch(
 <template>
     <div
         class="Stone"
-        :class="[`Stone--${colorName}`, { 'Stone--flip': isFlipping }]"
+        :class="[
+            `Stone--${colorName}`,
+            { 'Stone--flip': isFlipping },
+            { 'Stone--yakiniku': gameStore.isYakiniku },
+            gameStore.isYakiniku ? 'Stone--yakiniku--' + colorName : '',
+        ]"
     ></div>
 </template>
 
@@ -57,9 +65,29 @@ watch(
         animation: stone-flip 0.3s forwards;
     }
 
+    &--yakiniku {
+        width: 70px;
+        height: 70px;
+        background-size: 70px;
+    }
+
+    &--yakiniku--black {
+        background: url(/src/assets/images/black.png) no-repeat 0 0;
+    }
+
+    &--yakiniku--white {
+        background: url(/src/assets/images/white.png) no-repeat 0 0;
+    }
+
     @media screen and (max-width: 740px) {
         width: var.vw(50);
         height: var.vw(50);
+
+        &--yakiniku {
+            width: var.vw(70);
+            height: var.vw(70);
+            background-size: var.vw(70);
+        }
     }
 }
 

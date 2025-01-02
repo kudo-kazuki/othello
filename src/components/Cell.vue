@@ -34,7 +34,14 @@ const placeStone = () => {
 <template>
     <div
         class="Cell"
-        :class="{ 'Cell--placeAble': isPlaceAbled }"
+        :class="[
+            { 'Cell--placeAble': isPlaceAbled },
+            { 'Cell--yakiniku': gameStore.isYakiniku },
+            {
+                'Cell--yakiniku--placeAble':
+                    isPlaceAbled && gameStore.isYakiniku,
+            },
+        ]"
         :data-col="col"
         :data-row="row"
         @click="placeStone()"
@@ -68,9 +75,24 @@ const placeStone = () => {
         }
     }
 
+    &--yakiniku--placeAble {
+        background-color: rgba(255, 255, 0, 0.8);
+        border: none;
+
+        &:hover {
+            background: url(/src/assets/images/cursor.png) no-repeat 0 0;
+        }
+    }
+
     @media screen and (max-width: 740px) {
         width: var.vw(80);
         height: var.vw(80);
+
+        &--yakiniku--placeAble {
+            &:hover {
+                background-size: var.vw(80) var.vw(80);
+            }
+        }
     }
 }
 </style>
