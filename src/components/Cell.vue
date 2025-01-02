@@ -16,6 +16,7 @@ const gameStore = useGameStore()
 const isPlaceAbled = computed(() => {
     return (
         gameStore.currentColor == gameStore.humanColor &&
+        !gameStore.isCpuThinking &&
         gameStore.placeableCells.some(
             ([r, c]) => r === props.row && c === props.col,
         )
@@ -65,6 +66,11 @@ const placeStone = () => {
         &:hover {
             background-color: red;
         }
+    }
+
+    @media screen and (max-width: 740px) {
+        width: var.vw(80);
+        height: var.vw(80);
     }
 }
 </style>

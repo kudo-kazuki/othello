@@ -37,5 +37,9 @@ const gameStore = useGameStore()
     &__row {
         display: flex;
     }
+
+    @media screen and (max-width: 740px) {
+        width: var.vw(640);
+    }
 }
 </style>

@@ -56,6 +56,11 @@ watch(
     &--flip {
         animation: stone-flip 0.3s forwards;
     }
+
+    @media screen and (max-width: 740px) {
+        width: var.vw(50);
+        height: var.vw(50);
+    }
 }
 
 @keyframes stone-flip {
