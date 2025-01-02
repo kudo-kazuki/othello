@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-    createInitialBoard,
-    BoardState,
-    BLACK,
-    WHITE,
-    EMPTY,
-    StoneColor,
-} from '@/logics/board'
+import { BLACK, WHITE } from '@/logics/board'
 import { useGameStore } from '@/stores/game'
 const gameStore = useGameStore()
 

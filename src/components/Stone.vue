@@ -25,7 +25,7 @@ watch(
         isFlipping.value = true
         setTimeout(() => {
             isFlipping.value = false
-        }, 300)
+        }, 500)
     },
 )
 </script>
@@ -62,7 +62,7 @@ watch(
     }
 
     &--flip {
-        animation: stone-flip 0.3s forwards;
+        animation: stone-flip 0.5s forwards;
     }
 
     &--yakiniku {
@@ -93,10 +93,10 @@ watch(
 
 @keyframes stone-flip {
     0% {
-        transform: rotateY(0deg);
+        transform: rotateY(0deg) scale(1.5);
     }
     100% {
-        transform: rotateY(180deg);
+        transform: rotateY(180deg) scale(1);
     }
 }
 </style>

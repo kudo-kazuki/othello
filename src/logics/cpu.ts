@@ -1,16 +1,16 @@
-import { BoardState, StoneColor, BLACK, WHITE, EMPTY } from '@/logics/board'
+import { BoardState, StoneColor, BLACK, WHITE } from '@/logics/board'
 import { getPlaceableCells, placeStone } from '@/logics/gameRules'
 
 // 8x8の重みテーブル
 const WEIGHT_TABLE: number[][] = [
-    [120, -20, 20, 5, 5, 20, -20, 120],
-    [-20, -40, -5, -5, -5, -5, -40, -20],
+    [2000, -200, 20, 5, 5, 20, -200, 2000],
+    [-200, -400, -5, -5, -5, -5, -400, -200],
     [20, -5, 15, 3, 3, 15, -5, 20],
     [5, -5, 3, 3, 3, 3, -5, 5],
     [5, -5, 3, 3, 3, 3, -5, 5],
     [20, -5, 15, 3, 3, 15, -5, 20],
-    [-20, -40, -5, -5, -5, -5, -40, -20],
-    [120, -20, 20, 5, 5, 20, -20, 120],
+    [-200, -400, -5, -5, -5, -5, -400, -200],
+    [2000, -200, 20, 5, 5, 20, -200, 2000],
 ]
 
 /**
@@ -38,9 +38,18 @@ export function getAlphaBetaMove(
     color: StoneColor,
     depth: number,
 ): [number, number] | null {
+    console.log('color', color)
+
     // 置ける手が無ければ null
     const moves = getPlaceableCells(board, color)
-    if (moves.length === 0) return null
+    if (moves.length === 0) {
+        return null
+    }
+
+    // ★ ここで move ordering (着手の並び替え) ★
+    moves.sort((a, b) => {
+        return WEIGHT_TABLE[b[0]][b[1]] - WEIGHT_TABLE[a[0]][a[1]]
+    })
 
     let bestMove: [number, number] | null = null
     let bestValue = -Infinity
@@ -55,14 +64,19 @@ export function getAlphaBetaMove(
         placeStone(nextBoard, move[0], move[1], color)
 
         // Minノード(相手番)を深さ depth-1 で評価
-        const value = alphaBetaSearch(
-            nextBoard,
-            getOpponentColor(color),
-            depth - 1,
-            alpha,
-            beta,
-            false,
-        )
+        console.log('Minノード(相手番)を深さ depth-1 で評価の直前の係数', color)
+        const value =
+            color *
+            alphaBetaSearch(
+                nextBoard,
+                getOpponentColor(color),
+                depth - 1,
+                alpha,
+                beta,
+                false,
+            )
+
+        // console.log(`move=(${move[0]},${move[1]}) => value=${value}`)
 
         // 最大値を更新
         if (value > bestValue) {

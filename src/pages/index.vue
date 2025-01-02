@@ -9,8 +9,26 @@ const { windowWidth, deviceType } = useWindowWidthAndDevice()
 
 const gameStore = useGameStore()
 
+const imagePaths = [
+    '/src/assets/images/BGSet.png',
+    '/src/assets/images/black.png',
+    '/src/assets/images/white.png',
+    '/src/assets/images/cursor.png',
+]
+
+const preloadImages = (paths: string[]) => {
+    paths.forEach((path) => {
+        const img = new Image()
+        img.src = path
+    })
+}
+
 onMounted(() => {
-    gameStore.startGame()
+    preloadImages(imagePaths)
+
+    if (gameStore.isDebug) {
+        gameStore.startGame()
+    }
 })
 </script>
 
@@ -21,6 +39,7 @@ onMounted(() => {
         :data-device="deviceType"
         :data-windowWidth="windowWidth"
     >
+        <SettingStart v-if="!gameStore.isGameStart && !gameStore.isDebug" />
         <Board />
         <GameInfo v-if="gameStore.isGameStart" />
         <Result v-if="gameStore.isGameEnd" />
@@ -49,6 +68,12 @@ onMounted(() => {
         font-size: 40px;
         color: #fff;
         text-shadow: 1px 1px 0 #000;
+    }
+
+    @media screen and (max-width: 740px) {
+        &__cpuThinking {
+            font-size: var.vw(70);
+        }
     }
 }
 </style>

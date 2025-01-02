@@ -2,10 +2,10 @@ import { defineStore } from 'pinia'
 import { nextTick } from 'vue'
 import {
     createInitialBoard,
+    initialDebugBoard1,
     BoardState,
     BLACK,
     WHITE,
-    EMPTY,
     StoneColor,
 } from '@/logics/board'
 import {
@@ -29,6 +29,7 @@ interface gameStore {
     isCpuThinking: boolean
     isYakiniku: boolean
     isYugami: boolean
+    isDebug: boolean
 }
 
 export const useGameStore = defineStore('game', {
@@ -40,13 +41,16 @@ export const useGameStore = defineStore('game', {
         currentColor: BLACK,
         humanColor: BLACK,
         placeableCells: [],
-        cpuStrong: 2,
+        cpuStrong: 1,
         isCpuThinking: false,
         isYakiniku: false,
         isYugami: false,
+        isDebug: false,
     }),
     actions: {
         startGame() {
+            this.setDebug()
+
             this.isGameStart = true
             this.updatePlaceableCells()
 
@@ -111,9 +115,29 @@ export const useGameStore = defineStore('game', {
 
             let move: [number, number] | null = null
 
+            await new Promise((resolve) => setTimeout(resolve, 500))
+
             if (this.cpuStrong === 1) {
                 move = getRandomMove(this.board, this.currentColor)
             } else if (this.cpuStrong === 2) {
+                let depth = 1
+
+                if (this.turn > 50) {
+                    depth = 8
+                } else if (this.turn > 35) {
+                    depth = 7
+                } else if (this.turn > 25) {
+                    depth = 6
+                } else if (this.turn > 20) {
+                    depth = 5
+                } else if (this.turn > 15) {
+                    depth = 4
+                } else if (this.turn > 10) {
+                    depth = 3
+                } else if (this.turn > 4) {
+                    depth = 2
+                }
+
                 // 結果を受け取るまで待ちたい → Promiseでラップし、resolve()されたら先へ
                 await new Promise<void>((resolve) => {
                     const worker = new Worker(
@@ -125,7 +149,7 @@ export const useGameStore = defineStore('game', {
                     worker.postMessage({
                         board: JSON.parse(JSON.stringify(this.board)),
                         color: this.currentColor,
-                        depth: 6,
+                        depth: depth,
                     } as WorkerInputMessage)
 
                     // worker から結果を受け取る
@@ -136,7 +160,7 @@ export const useGameStore = defineStore('game', {
                         this.isCpuThinking = false
 
                         if (data.success) {
-                            console.log('data', data)
+                            // console.log('data', data)
                             move = [data.row, data.col]
                         } else {
                             move = null
@@ -196,6 +220,14 @@ export const useGameStore = defineStore('game', {
             style = 'skew(' + xDeg + 'deg, ' + yDeg + 'deg)'
 
             body.style.transform = style
+        },
+
+        setDebug() {
+            if (!this.isDebug) {
+                return false
+            }
+            this.board = initialDebugBoard1()
+            this.turn = 21
         },
     },
 

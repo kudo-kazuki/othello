@@ -25,3 +25,35 @@ export function createInitialBoard(): BoardState {
 
     return board
 }
+
+export function initialDebugBoard1(): BoardState {
+    const board: BoardState = Array.from({ length: 8 }, () =>
+        Array.from({ length: 8 }, () => EMPTY),
+    )
+
+    board[0][1] = BLACK
+    board[1][0] = BLACK
+    board[1][1] = BLACK
+    board[1][2] = WHITE
+    board[1][3] = BLACK
+    board[1][4] = BLACK
+    board[1][5] = BLACK
+    board[2][0] = WHITE
+    board[2][1] = WHITE
+    board[2][2] = WHITE
+    board[2][4] = WHITE
+    board[3][0] = BLACK
+    board[3][1] = WHITE
+    board[3][2] = WHITE
+    board[3][3] = WHITE
+    board[3][4] = BLACK
+    board[3][5] = BLACK
+    board[3][6] = BLACK
+    board[4][1] = BLACK
+    board[4][2] = WHITE
+    board[4][3] = WHITE
+    board[4][4] = WHITE
+    board[5][1] = BLACK
+
+    return board
+}

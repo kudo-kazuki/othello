@@ -14,11 +14,13 @@ declare module 'vue' {
     GameInfo: typeof import('./components/GameInfo.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
     LeftSideMenu: typeof import('./components/LeftSideMenu/index.vue')['default']
+    Radio: typeof import('./components/Radio.vue')['default']
     Result: typeof import('./components/Result.vue')['default']
     RightSideMenu: typeof import('./components/RightSideMenu/index.vue')['default']
     RootContainer: typeof import('./components/RootContainer.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SettingStart: typeof import('./components/SettingStart.vue')['default']
     Stone: typeof import('./components/Stone.vue')['default']
   }
 }

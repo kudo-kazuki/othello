@@ -15,8 +15,7 @@ const gameStore = useGameStore()
                 引き分け
             </p>
             <p v-else class="Result__winingInfo">
-                <span>{{ gameStore.humanIsWinning ? 'あなた' : 'CPU' }}</span
-                >の
+                <span>あなた</span>の
                 <span v-if="gameStore.humanIsWinning" class="Result__resultText"
                     >勝ち</span
                 >
