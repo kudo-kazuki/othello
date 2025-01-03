@@ -24,7 +24,7 @@ const isPlaceAbled = computed(() => {
 })
 
 const placeStone = () => {
-    if (!isPlaceAbled) {
+    if (!isPlaceAbled.value) {
         return false
     }
     gameStore.placeStone(props.row, props.col)
