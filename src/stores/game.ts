@@ -14,7 +14,6 @@ import {
     placeStone,
     isGameEnd,
 } from '@/logics/gameRules'
-import { getRandomMove } from '@/logics/cpu'
 import { WorkerInputMessage, WorkerOutputMessage } from '@/workers/cpuWorker'
 
 interface gameStore {
@@ -118,9 +117,7 @@ export const useGameStore = defineStore('game', {
 
             await new Promise((resolve) => setTimeout(resolve, 500))
 
-            if (this.cpuStrong === 1) {
-                move = getRandomMove(this.board, this.currentColor)
-            } else if (this.cpuStrong === 2) {
+            if (this.cpuStrong === 2) {
                 if (this.turn > 50) {
                     depth = 8
                 } else if (this.turn > 35) {
@@ -138,7 +135,7 @@ export const useGameStore = defineStore('game', {
                 }
                 // move = getAlphaBetaMove(this.board, this.currentColor, 6)
             } else if (this.cpuStrong === 3) {
-                depth = 100
+                depth = 200
             }
 
             // 結果を受け取るまで待ちたい → Promiseでラップし、resolve()されたら先へ
@@ -177,7 +174,7 @@ export const useGameStore = defineStore('game', {
             this.isCpuThinking = false
 
             if (move) {
-                const [row, col] = move
+                const [row, col] = move as [number, number]
                 // CPU が石を置く
                 this.placeStone(row, col)
             }

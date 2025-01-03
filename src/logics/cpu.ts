@@ -38,8 +38,6 @@ export function getAlphaBetaMove(
     color: StoneColor,
     depth: number,
 ): [number, number] | null {
-    console.log('color', color)
-
     // 置ける手が無ければ null
     const moves = getPlaceableCells(board, color)
     if (moves.length === 0) {
@@ -64,7 +62,7 @@ export function getAlphaBetaMove(
         placeStone(nextBoard, move[0], move[1], color)
 
         // Minノード(相手番)を深さ depth-1 で評価
-        console.log('Minノード(相手番)を深さ depth-1 で評価の直前の係数', color)
+        // console.log('Minノード(相手番)を深さ depth-1 で評価の直前の係数', color)
         const value =
             color *
             alphaBetaSearch(

@@ -208,5 +208,14 @@ colorMap[WHITE] = '白（後攻）'
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
+
+    @media screen and (max-width: 740px) {
+        padding: 16px;
+
+        &__inner {
+            width: 100%;
+            padding: 16px;
+        }
+    }
 }
 </style>
