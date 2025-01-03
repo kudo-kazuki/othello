@@ -1,11 +1,13 @@
 /// <reference lib="webworker" />
 import { BoardState, StoneColor } from '@/logics/board'
 import { getAlphaBetaMove } from '@/logics/cpu'
+import { searchMonteCarloStone } from '@/logics/monteCarlo'
 
 export interface WorkerInputMessage {
     board: BoardState
     color: StoneColor
     depth: number
+    cpuStrong: number
 }
 
 export interface WorkerOutputMessage {
@@ -16,7 +18,16 @@ export interface WorkerOutputMessage {
 
 self.addEventListener('message', (event) => {
     const data = event.data as WorkerInputMessage
-    const move = getAlphaBetaMove(data.board, data.color, data.depth)
+    let move
+
+    if (data.cpuStrong === 2) {
+        console.log('minmax')
+        move = getAlphaBetaMove(data.board, data.color, data.depth)
+    } else if (data.cpuStrong === 3) {
+        console.log('モンテカルロ')
+        move = searchMonteCarloStone(data.board, data.color, data.depth)
+    }
+
     if (move) {
         const [row, col] = move
         const resp: WorkerOutputMessage = { row, col, success: true }

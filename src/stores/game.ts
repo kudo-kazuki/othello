@@ -114,14 +114,13 @@ export const useGameStore = defineStore('game', {
             await nextTick()
 
             let move: [number, number] | null = null
+            let depth = 1
 
             await new Promise((resolve) => setTimeout(resolve, 500))
 
             if (this.cpuStrong === 1) {
                 move = getRandomMove(this.board, this.currentColor)
             } else if (this.cpuStrong === 2) {
-                let depth = 1
-
                 if (this.turn > 50) {
                     depth = 8
                 } else if (this.turn > 35) {
@@ -137,41 +136,43 @@ export const useGameStore = defineStore('game', {
                 } else if (this.turn > 4) {
                     depth = 2
                 }
-
-                // 結果を受け取るまで待ちたい → Promiseでラップし、resolve()されたら先へ
-                await new Promise<void>((resolve) => {
-                    const worker = new Worker(
-                        new URL('@/workers/cpuWorker.ts', import.meta.url),
-                        { type: 'module' },
-                    )
-
-                    // worker に送るデータ
-                    worker.postMessage({
-                        board: JSON.parse(JSON.stringify(this.board)),
-                        color: this.currentColor,
-                        depth: depth,
-                    } as WorkerInputMessage)
-
-                    // worker から結果を受け取る
-                    worker.addEventListener('message', (event) => {
-                        const data = event.data as WorkerOutputMessage
-                        worker.terminate() // 1回使い捨てなら terminate() してしまう
-
-                        this.isCpuThinking = false
-
-                        if (data.success) {
-                            // console.log('data', data)
-                            move = [data.row, data.col]
-                        } else {
-                            move = null
-                        }
-
-                        resolve() // ここで「Worker処理が終わった」としてPromiseを解決
-                    })
-                })
-
                 // move = getAlphaBetaMove(this.board, this.currentColor, 6)
+            } else if (this.cpuStrong === 3) {
+                depth = 100
             }
+
+            // 結果を受け取るまで待ちたい → Promiseでラップし、resolve()されたら先へ
+            await new Promise<void>((resolve) => {
+                const worker = new Worker(
+                    new URL('@/workers/cpuWorker.ts', import.meta.url),
+                    { type: 'module' },
+                )
+
+                // worker に送るデータ
+                worker.postMessage({
+                    board: JSON.parse(JSON.stringify(this.board)),
+                    color: this.currentColor,
+                    depth: depth,
+                    cpuStrong: this.cpuStrong,
+                } as WorkerInputMessage)
+
+                // worker から結果を受け取る
+                worker.addEventListener('message', (event) => {
+                    const data = event.data as WorkerOutputMessage
+                    worker.terminate() // 1回使い捨てなら terminate() してしまう
+
+                    this.isCpuThinking = false
+
+                    if (data.success) {
+                        console.log('data', data)
+                        move = [data.row, data.col]
+                    } else {
+                        move = null
+                    }
+
+                    resolve() // ここで「Worker処理が終わった」としてPromiseを解決
+                })
+            })
 
             this.isCpuThinking = false
 

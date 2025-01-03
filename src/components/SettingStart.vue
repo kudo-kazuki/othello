@@ -53,6 +53,15 @@ colorMap[WHITE] = '白（後攻）'
                         v-model="gameStore.cpuStrong"
                     />
                 </li>
+                <li>
+                    <Radio
+                        id="cpu3"
+                        name="cpuStrong"
+                        text="強いかも"
+                        :value="3"
+                        v-model="gameStore.cpuStrong"
+                    />
+                </li>
             </ul>
 
             <h1 class="SettingStart__hdg">スキン</h1>
