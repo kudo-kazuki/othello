@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useGameStore } from '@/stores/game'
 import { BLACK, WHITE, CellState } from '@/logics/board'
 
@@ -29,6 +29,27 @@ const placeStone = () => {
     }
     gameStore.placeStone(props.row, props.col)
 }
+
+const isPlaced = computed(() => {
+    if (!gameStore.currentPlaceStoneCell) {
+        return false
+    }
+
+    const [stoneRow, stoneCol] = gameStore.currentPlaceStoneCell
+    return props.row === stoneRow && props.col === stoneCol
+})
+
+const isEffect = ref(false)
+watch(
+    () => isPlaced.value,
+    (newVal) => {
+        isEffect.value = newVal
+
+        setTimeout(() => {
+            isEffect.value = false
+        }, 500)
+    },
+)
 </script>
 
 <template>
@@ -51,11 +72,13 @@ const placeStone = () => {
             class="Cell__stone"
             :color="state"
         />
+        <Effect v-if="isEffect" class="Cell__circleAura" name="Rose" />
     </div>
 </template>
 
 <style scoped lang="scss">
 .Cell {
+    position: relative;
     display: flex;
     box-sizing: border-box;
     border: 1px solid #222;
@@ -82,6 +105,12 @@ const placeStone = () => {
         &:hover {
             background: url(/src/assets/images/cursor.png) no-repeat 0 0;
         }
+    }
+
+    & &__circleAura {
+        position: absolute;
+        pointer-events: none;
+        z-index: 99999;
     }
 
     @media screen and (max-width: 740px) {

@@ -25,6 +25,7 @@ interface gameStore {
     currentColor: StoneColor
     humanColor: StoneColor
     placeableCells: Array<[number, number]>
+    currentPlaceStoneCell: [number, number] | null
     cpuStrong: number
     isCpuThinking: boolean
     isYakiniku: boolean
@@ -41,6 +42,7 @@ export const useGameStore = defineStore('game', {
         currentColor: BLACK,
         humanColor: BLACK,
         placeableCells: [],
+        currentPlaceStoneCell: null,
         cpuStrong: 1,
         isCpuThinking: false,
         isYakiniku: false,
@@ -70,6 +72,7 @@ export const useGameStore = defineStore('game', {
             }
 
             placeStone(this.board, row, col, this.currentColor)
+            this.currentPlaceStoneCell = [row, col]
 
             playAudio('tetterette')
 
