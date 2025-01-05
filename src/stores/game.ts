@@ -15,6 +15,7 @@ import {
     isGameEnd,
 } from '@/logics/gameRules'
 import { WorkerInputMessage, WorkerOutputMessage } from '@/workers/cpuWorker'
+import { playAudio } from '@/utility/audio'
 
 interface gameStore {
     board: BoardState
@@ -70,6 +71,8 @@ export const useGameStore = defineStore('game', {
 
             placeStone(this.board, row, col, this.currentColor)
 
+            playAudio('tetterette')
+
             this.currentColor = this.currentColor === BLACK ? WHITE : BLACK
             this.turn++
 
@@ -79,6 +82,9 @@ export const useGameStore = defineStore('game', {
             this.isGameEnd = isGameEnd(this.board, this.currentColor, this.turn)
             if (this.isGameEnd) {
                 console.log('ゲーム終了')
+                if (this.humanIsWinning) {
+                    playAudio('victory')
+                }
                 return false
             }
 

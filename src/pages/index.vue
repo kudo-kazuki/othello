@@ -3,18 +3,17 @@ import { onMounted } from 'vue'
 import { useWindowHeight } from '@/composables/useWindowHeight'
 import { useWindowWidthAndDevice } from '@/composables/useWindowWidthAndDevice'
 import { useGameStore } from '@/stores/game'
+import BGSetImage from '@/assets/images/BGSet.png'
+import BlackImage from '@/assets/images/black.png'
+import WhiteImage from '@/assets/images/white.png'
+import CursorImage from '@/assets/images/cursor.png'
 
 const { windowHeight } = useWindowHeight()
 const { windowWidth, deviceType } = useWindowWidthAndDevice()
 
 const gameStore = useGameStore()
 
-const imagePaths = [
-    '/src/assets/images/BGSet.png',
-    '/src/assets/images/black.png',
-    '/src/assets/images/white.png',
-    '/src/assets/images/cursor.png',
-]
+const imagePaths = [BGSetImage, BlackImage, WhiteImage, CursorImage]
 
 const preloadImages = (paths: string[]) => {
     paths.forEach((path) => {

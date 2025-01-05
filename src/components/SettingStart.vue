@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { BLACK, WHITE } from '@/logics/board'
+import { preloadAudioFiles } from '@/utility/audio'
 import { useGameStore } from '@/stores/game'
 const gameStore = useGameStore()
 
@@ -111,7 +112,7 @@ colorMap[WHITE] = '白（後攻）'
             <div class="SettingStart__buttonWrap">
                 <button
                     class="SettingStart__button"
-                    @click="gameStore.startGame()"
+                    @click="(gameStore.startGame(), preloadAudioFiles())"
                 >
                     <span class="SettingStart__buttonText">開始</span>
                 </button>
