@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
 import { useWindowHeight } from '@/composables/useWindowHeight'
 import { useWindowWidthAndDevice } from '@/composables/useWindowWidthAndDevice'
-import { UserInput } from '@/types/pachinko'
 import { usePachinkoSimulator } from '@/composables/usePachinkoSimulator'
 
 const { windowHeight } = useWindowHeight()
