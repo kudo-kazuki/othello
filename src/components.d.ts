@@ -8,9 +8,11 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     Board: typeof import('./components/Board.vue')['default']
+    Button: typeof import('./components/Button.vue')['default']
     Cell: typeof import('./components/Cell.vue')['default']
     CircleAura: typeof import('./components/Effect/Effects/CircleAura.vue')['default']
     Effect: typeof import('./components/Effect/index.vue')['default']
+    ElScrollbar: typeof import('element-plus/es')['ElScrollbar']
     GameInfo: typeof import('./components/GameInfo.vue')['default']
     Radio: typeof import('./components/Radio.vue')['default']
     Result: typeof import('./components/Result.vue')['default']
