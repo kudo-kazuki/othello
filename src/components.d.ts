@@ -14,6 +14,7 @@ declare module 'vue' {
     Effect: typeof import('./components/Effect/index.vue')['default']
     ElScrollbar: typeof import('element-plus/es')['ElScrollbar']
     GameInfo: typeof import('./components/GameInfo.vue')['default']
+    PachinkoChart: typeof import('./components/PachinkoChart.vue')['default']
     Radio: typeof import('./components/Radio.vue')['default']
     Result: typeof import('./components/Result.vue')['default']
     Rose: typeof import('./components/Effect/Effects/Rose.vue')['default']

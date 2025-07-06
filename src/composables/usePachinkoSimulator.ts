@@ -1,312 +1,117 @@
-import { ref } from 'vue'
+/* --------------------------------------------------
+ * src/composables/usePachinkoSimulator.ts
+ * --------------------------------------------------
+ * Vue 3 用コンポーザブル。
+ *  - Web Worker で streaming 実行 (progress / done)
+ *  - isCalculating フラグで「計算中です」を制御
+ * --------------------------------------------------*/
+
+import { ref, computed, onUnmounted } from 'vue'
 import {
     UserInput,
     SimulationState,
     OnceSimulationState,
 } from '@/types/pachinko'
-
-const BALLS_PER_1000_YEN = 250
+import {
+    createInitialSimulationState,
+    simulatePachinko,
+} from '@/logics/pachinko'
 
 export const usePachinkoSimulator = () => {
-    // 入力フォーム用
     const userInput = ref<UserInput>({})
-
-    /**シミュレーション全体を通しての状態 */
-    const simulationState = ref<SimulationState>({
-        isSimulationStart: false,
-        isSimulationEnd: false,
-        remainingSimulations: 0,
-        currentSimulationCount: 0,
-        hasMoney: 0,
-        hasBalls: 0,
-        totalPayout: 0,
-        totalPayoutBalls: 0,
-        avgSpinsFirstJackpot: 0,
-        medianSpinsFirstJackpot: 0,
-        varSpinsFirstJackpot: 0,
-        stdDevSpinsFirstJackpot: 0,
-        maxMissSpins: 0,
-        minMissSpins: 0,
-        maxMissSpinsInKakuhen: 0,
-        minMissSpinsInKakuhen: 0,
-        maxKakuhenJackpotChain: 0,
-        avgKakuhenJackpotChain: 0,
-        frequencySpinsFirstJackpotItems: {},
-    })
-
+    const simulationState = ref<SimulationState>(createInitialSimulationState())
     const onceSimulationState = ref<OnceSimulationState>({
-        mode: 'normal', // 通常 or 時短 or 確変
-        currentSpins: 0, // 現在の回転数（時短 or 確変突入時は0にリセット）
-        currentKakuhenJackpotChain: 0, // 現在の確変中の大当たり連続回数
+        mode: 'normal',
+        currentSpins: 0,
+        currentKakuhenJackpotChain: 0,
         maxMissSpinsInKakuhen: 0,
         minMissSpinsInKakuhen: 0,
     })
+    const isCalculating = ref(false)
 
-    const startSimulation = () => {
-        simulationState.value.isSimulationStart = true
-        simulationState.value.hasMoney = userInput.value.startingMoney ?? 0
-        simulationState.value.hasMoney -= 1000
-        simulationState.value.hasBalls = BALLS_PER_1000_YEN
-        simulationState.value.currentSimulationCount = 0
-    }
-
-    /* --------------------------------------------------
-     * ④ 計算キャッシュ（computed）
-     * --------------------------------------------------*/
-    const costPerSpin = computed<number>(() => {
+    const BALLS_PER_1000_YEN = 250
+    const costPerSpin = computed(() => {
         const avg = userInput.value.avgSpinsPer1000yen ?? 0
         return avg ? BALLS_PER_1000_YEN / avg : 0
     })
 
-    /* --------------------------------------------------
-     * ④ 乱数・ユーティリティ
-     * --------------------------------------------------*/
-    const rng = (): number => Math.random()
-
-    const randomizedBallCost = (perSpin: number): number => {
-        const int = Math.floor(perSpin)
-        const frac = perSpin - int
-        return rng() < frac ? int + 1 : int
-    }
-
-    // 玉を消費し、マイナスになれば 250 発補充して所持金を減算
-    const consumeBalls = (balls: number) => {
-        simulationState.value.hasBalls -= balls
-        if (simulationState.value.hasBalls < 0) {
-            const deficit = -simulationState.value.hasBalls
-            const refill = BALLS_PER_1000_YEN - deficit
-            const pricePerBall = userInput.value.pricePerBall ?? 0
-            // 投資額更新
-            simulationState.value.totalPayout += refill * pricePerBall
-            simulationState.value.hasMoney -= refill * pricePerBall
-            simulationState.value.hasBalls += refill
-        }
-    }
-
-    const chance = (percent: number): boolean => rng() < percent / 100
-
-    /* --------------------------------------------------
-     * 初当たり統計更新 helper
-     * --------------------------------------------------*/
-    const updateFirstHitStats = (spins: number) => {
-        const freq = simulationState.value.frequencySpinsFirstJackpotItems
-        freq[spins] = (freq[spins] || 0) + 1
-        if (spins > simulationState.value.maxMissSpins)
-            simulationState.value.maxMissSpins = spins
-        if (spins < simulationState.value.minMissSpins)
-            simulationState.value.minMissSpins = spins
-    }
-
-    /* --------------------------------------------------
-     * 通常時に 1 回転させる関数
-     * --------------------------------------------------*/
-    const spinNormal = (): boolean => {
-        const jackpotProb = userInput.value.jackpotProbability
-            ? 1 / userInput.value.jackpotProbability
-            : 0
-
-        if (!costPerSpin.value || !jackpotProb) return false
-
-        // ❶ 玉を消費
-        consumeBalls(randomizedBallCost(costPerSpin.value))
-
-        // ❷ 回転数カウント
-        onceSimulationState.value.currentSpins += 1
-
-        // ❸ 当たり判定
-        return rng() < jackpotProb
-    }
-
-    /* --------------------------------------------------
-     * ⑦ 電サポ中 1 回転（jitan / kakuhen 共通）
-     *    - 1/20 で玉を 1 個消費
-     *    - jitan モードなら通常確率、kakuhen モードなら高確率
-     * --------------------------------------------------*/
-    const spinDenSupports = (): boolean => {
-        // 1/20 で 1 発消費
-        if (rng() < 1 / 20) consumeBalls(1)
-
-        // モードに応じた確率
-        let hitProb = 0
-        if (onceSimulationState.value.mode === 'jitan') {
-            hitProb = userInput.value.jackpotProbability
-                ? 1 / userInput.value.jackpotProbability
-                : 0
-        } else if (onceSimulationState.value.mode === 'kakuhen') {
-            hitProb = userInput.value.kakuhenJackpotProbability
-                ? 1 / userInput.value.kakuhenJackpotProbability
-                : 0
-        }
-
-        onceSimulationState.value.currentSpins += 1
-        return rng() < hitProb
-    }
-
-    /* --------------------------------------------------
-     * ⑧ 1 試行 (simulateOnce)
-     * --------------------------------------------------*/
-    const simulateOnce = (): number => {
-        // reset per‑trial fields
-        onceSimulationState.value.mode = 'normal'
-        onceSimulationState.value.currentSpins = 0
-        onceSimulationState.value.currentKakuhenJackpotChain = 0
-        onceSimulationState.value.maxMissSpinsInKakuhen = 0
-        onceSimulationState.value.minMissSpinsInKakuhen = 1
-
-        // ****** 通常時 → 初当たり ******
-        while (!spinNormal()) {}
-        const spinsToFirst = onceSimulationState.value.currentSpins
-        updateFirstHitStats(spinsToFirst)
-        // 出玉加算（初当たり）
-        simulationState.value.totalPayoutBalls +=
-            userInput.value.firstJackpotPayout ?? 0
-
-        // reset spins counter after hit
-        onceSimulationState.value.currentSpins = 0
-
-        // ****** 確変 or 時短 ******
-        let inRush = chance(userInput.value.kakuhenEntryRate ?? 0)
-        onceSimulationState.value.mode = inRush ? 'kakuhen' : 'jitan'
-        let remainJitan = userInput.value.jitanModeRounds ?? 0
-        let rushChain = 0
-        let kakuhenMissCnt = 0
-
-        while (true) {
-            const isHit = spinDenSupports()
-            if (isHit) {
-                // 出玉加算
-                if (onceSimulationState.value.mode === 'kakuhen') {
-                    simulationState.value.totalPayoutBalls +=
-                        userInput.value.avgJackpotPayoutDuringRush ?? 0
-                } else {
-                    simulationState.value.totalPayoutBalls +=
-                        userInput.value.firstJackpotPayout ?? 0
-                }
-
-                // ※ 確変中のハマり更新
-                if (onceSimulationState.value.mode === 'kakuhen') {
-                    if (
-                        kakuhenMissCnt >
-                        onceSimulationState.value.maxMissSpinsInKakuhen
-                    ) {
-                        onceSimulationState.value.maxMissSpinsInKakuhen =
-                            kakuhenMissCnt
-                    }
-                    if (
-                        kakuhenMissCnt <
-                        onceSimulationState.value.minMissSpinsInKakuhen
-                    ) {
-                        onceSimulationState.value.minMissSpinsInKakuhen =
-                            kakuhenMissCnt
-                    }
-                    kakuhenMissCnt = 0
-                }
-
-                // reset spins for next loop
-                onceSimulationState.value.currentSpins = 0
-
-                if (onceSimulationState.value.mode === 'kakuhen') {
-                    rushChain++
-                    if (!chance(userInput.value.kakuhenContinuationRate ?? 0)) {
-                        onceSimulationState.value.mode = 'jitan'
-                        remainJitan = userInput.value.jitanModeRounds ?? 0
-                    }
-                } else {
-                    if (chance(userInput.value.kakuhenEntryRate ?? 0)) {
-                        onceSimulationState.value.mode = 'kakuhen'
-                        rushChain = 0
-                    } else {
-                        remainJitan = userInput.value.jitanModeRounds ?? 0
-                    }
-                }
-            } else {
-                if (onceSimulationState.value.mode === 'kakuhen')
-                    kakuhenMissCnt++
-                if (onceSimulationState.value.mode === 'jitan') {
-                    remainJitan--
-                    if (remainJitan <= 0) break
-                }
+    /* ---------- Worker --------- */
+    let worker: Worker | null = null
+    const ensureWorker = () => {
+        if (worker) return worker
+        worker = new Worker(
+            new URL('@/workers/pachinkoWorker.ts', import.meta.url),
+            { type: 'module' },
+        )
+        worker.onmessage = (e: MessageEvent) => {
+            const { type, payload } = e.data
+            if (type === 'progress') {
+                simulationState.value = payload as SimulationState
+            } else if (type === 'done') {
+                simulationState.value = payload as SimulationState
+                isCalculating.value = false
             }
         }
-
-        // update global stats
-        if (rushChain > simulationState.value.maxKakuhenJackpotChain)
-            simulationState.value.maxKakuhenJackpotChain = rushChain
-        if (
-            onceSimulationState.value.maxMissSpinsInKakuhen >
-            simulationState.value.maxMissSpinsInKakuhen
-        )
-            simulationState.value.maxMissSpinsInKakuhen =
-                onceSimulationState.value.maxMissSpinsInKakuhen
-        if (
-            onceSimulationState.value.minMissSpinsInKakuhen <
-            simulationState.value.minMissSpinsInKakuhen
-        ) {
-            simulationState.value.minMissSpinsInKakuhen =
-                onceSimulationState.value.minMissSpinsInKakuhen
+        worker.onerror = (e) => {
+            console.error('Worker Error', e)
+            isCalculating.value = false
         }
-
-        return rushChain
+        return worker
     }
 
-    /* --------------------------------------------------
-     * ⑨ 全試行 (simulateAll)
-     * --------------------------------------------------*/
-    const simulateAll = (): void => {
+    onUnmounted(() => {
+        worker?.terminate()
+        worker = null
+    })
+
+    /* ---------- Helpers ---------- */
+    const resetOnce = () => {
+        onceSimulationState.value = {
+            mode: 'normal',
+            currentSpins: 0,
+            currentKakuhenJackpotChain: 0,
+            maxMissSpinsInKakuhen: 0,
+            minMissSpinsInKakuhen: 0,
+        }
+    }
+
+    const startSimulation = () => {
+        simulationState.value = createInitialSimulationState()
+        simulationState.value.isSimulationStart = true
+        resetOnce()
+    }
+
+    /* ---------- Public API ---------- */
+    const simulateAll = () => {
+        isCalculating.value = true
         startSimulation()
-
-        const totalRuns = userInput.value.jackpotAttempts ?? 0
-        let totalRushChain = 0
-
-        for (let i = 0; i < totalRuns; i++) {
-            const rushChain = simulateOnce()
-            totalRushChain += rushChain
-            simulationState.value.currentSimulationCount++
-            simulationState.value.remainingSimulations = totalRuns - (i + 1)
-        }
-
-        // ---- 統計集計 ----
-        const spinsFreq = simulationState.value.frequencySpinsFirstJackpotItems
-        const spinValues: number[] = []
-        let sumSpins = 0
-        Object.entries(spinsFreq).forEach(([k, v]) => {
-            const spin = Number(k)
-            const freq = v as number
-            sumSpins += spin * freq
-            for (let j = 0; j < freq; j++) spinValues.push(spin)
+        ensureWorker().postMessage({
+            userInput: { ...userInput.value },
+            batch: 100,
         })
-        const n = spinValues.length
-        spinValues.sort((a, b) => a - b)
-        const mean = n ? sumSpins / n : 0
-        const median = n
-            ? n % 2
-                ? spinValues[(n - 1) / 2]
-                : (spinValues[n / 2 - 1] + spinValues[n / 2]) / 2
-            : 0
-        const varSpins = n
-            ? spinValues.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / n
-            : 0
-
-        simulationState.value.avgSpinsFirstJackpot = mean
-        simulationState.value.medianSpinsFirstJackpot = median
-        simulationState.value.varSpinsFirstJackpot = varSpins
-        simulationState.value.stdDevSpinsFirstJackpot = Math.sqrt(varSpins)
-
-        simulationState.value.avgKakuhenJackpotChain = totalRuns
-            ? totalRushChain / totalRuns
-            : 0
-        simulationState.value.isSimulationEnd = true
     }
 
-    /** 呼び出し元へ渡す */
+    const simulateOnce = () => {
+        const input: UserInput = { ...userInput.value, jackpotAttempts: 1 }
+        simulationState.value = simulatePachinko(input)
+        // onceSimulationState を軽く反映
+        onceSimulationState.value.currentSpins =
+            simulationState.value.avgSpinsFirstJackpot
+    }
+
+    const spinNormal = () => console.warn('spinNormal は利用不可です')
+    const spinDenSupports = () => console.warn('spinDenSupports は利用不可です')
+
     return {
         userInput,
         simulationState,
         onceSimulationState,
+        isCalculating,
+        costPerSpin,
         startSimulation,
-        spinNormal, // まずは通常時 1 回転を外から呼び出せるように
-        spinDenSupports,
-        simulateOnce,
         simulateAll,
+        simulateOnce,
+        spinNormal,
+        spinDenSupports,
     }
 }

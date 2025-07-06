@@ -6,16 +6,8 @@ import { usePachinkoSimulator } from '@/composables/usePachinkoSimulator'
 const { windowHeight } = useWindowHeight()
 const { windowWidth, deviceType } = useWindowWidthAndDevice()
 
-const {
-    userInput,
-    simulationState,
-    onceSimulationState,
-    startSimulation,
-    spinNormal,
-    spinDenSupports,
-    simulateOnce,
-    simulateAll,
-} = usePachinkoSimulator()
+const { userInput, simulationState, simulateAll, isCalculating } =
+    usePachinkoSimulator()
 
 const inputDefault = () => {
     userInput.value.jackpotAttempts = 10000
@@ -32,31 +24,7 @@ const inputDefault = () => {
     userInput.value.startingMoney = 1000
 }
 
-const startOnceSpin = () => {
-    if (!simulationState.value.isSimulationStart) {
-        startSimulation()
-    }
-
-    // spinNormal()
-
-    const atariCounts = []
-    let counter = 0
-    for (let i = 1; i < 500000; i++) {
-        counter++
-        if (spinNormal()) {
-            atariCounts.push(counter)
-            counter = 0
-        }
-    }
-    const avg =
-        atariCounts.length > 0
-            ? atariCounts.reduce((sum, val) => sum + val, 0) /
-              atariCounts.length
-            : 0
-    console.log('atariCounts: ', atariCounts)
-    console.log('avg: ', avg)
-}
-
+/*
 const startOnceDenSapoSpin = () => {
     if (!simulationState.value.isSimulationStart) {
         startSimulation()
@@ -72,6 +40,7 @@ const startSimulateOnce = () => {
 
     simulateOnce()
 }
+*/
 </script>
 
 <template>
@@ -84,6 +53,14 @@ const startSimulateOnce = () => {
         <el-scrollbar always>
             <div class="Page__inner">
                 <h1>パチンコシミュレーター</h1>
+                <p v-if="isCalculating">計算中です...</p>
+                <p v-if="simulationState.isSimulationStart">
+                    現在{{ simulationState.currentSimulationCount }}回まで終了
+                </p>
+                <PachinkoChart
+                    v-if="simulationState.isSimulationStart"
+                    :data="simulationState.frequencySpinsFirstJackpotItems"
+                />
                 <Button
                     v-if="!simulationState.isSimulationStart"
                     @click="inputDefault()"
@@ -294,6 +271,7 @@ const startSimulateOnce = () => {
                     </div>
                 </form>
 
+                <!--
                 <Button
                     @click="startOnceSpin()"
                     text="通常1回転"
@@ -304,14 +282,120 @@ const startSimulateOnce = () => {
                     text="電サポ1回転"
                     color="blue"
                 />
+               
                 <Button
                     @click="startSimulateOnce()"
                     text="1シミュレーション開始"
                     color="blue"
                 />
-                <pre>userInput: {{ userInput }}</pre>
-                <pre>simulationState: {{ simulationState }}</pre>
-                <pre>onceSimulationState: {{ onceSimulationState }}</pre>
+   -->
+
+                <table
+                    v-if="simulationState.isSimulationStart"
+                    class="Page__table"
+                >
+                    <tbody>
+                        <tr>
+                            <th>所持金</th>
+                            <td>{{ simulationState.hasMoney }}</td>
+                            <th>持ち球</th>
+                            <td>{{ simulationState.hasBalls }}</td>
+                        </tr>
+                        <tr>
+                            <th>投入した金額合計</th>
+                            <td>{{ simulationState.totalPayout }}</td>
+                            <th>合計出玉</th>
+                            <td>{{ simulationState.totalPayoutBalls }}</td>
+                        </tr>
+                        <tr>
+                            <th>初当たりまでの平均回転数</th>
+                            <td>{{ simulationState.avgSpinsFirstJackpot }}</td>
+                            <th>初当たりまでの回転数の中央値</th>
+                            <td>
+                                {{ simulationState.medianSpinsFirstJackpot }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>初当たりまでの回転数の分散</th>
+                            <td>{{ simulationState.varSpinsFirstJackpot }}</td>
+                            <th>初当たりまでの回転数の標準偏差</th>
+                            <td>
+                                {{ simulationState.stdDevSpinsFirstJackpot }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>初当たりまでの最大ハマり回転数</th>
+                            <td>{{ simulationState.maxMissSpins }}</td>
+                            <th>初当たりまでの最速回転数</th>
+                            <td>{{ simulationState.minMissSpins }}</td>
+                        </tr>
+                        <tr>
+                            <th>確変中の最大ハマり回転数</th>
+                            <td>{{ simulationState.maxMissSpinsInKakuhen }}</td>
+                            <th>確変中の最速当たり回転数</th>
+                            <td>{{ simulationState.minMissSpinsInKakuhen }}</td>
+                        </tr>
+                        <tr>
+                            <th>最大連チャン数</th>
+                            <td>
+                                {{ simulationState.maxKakuhenJackpotChain }}
+                            </td>
+                            <th>平均連チャン数</th>
+                            <td>
+                                {{ simulationState.avgKakuhenJackpotChain }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <table
+                    v-if="simulationState.isSimulationStart"
+                    class="Page__table"
+                >
+                    <tbody>
+                        <tr>
+                            <th>大当たり試行回数</th>
+                            <td>{{ userInput.jackpotAttempts }}</td>
+                            <th>大当たり(初当たり)確率</th>
+                            <td>1 / {{ userInput.jackpotProbability }}</td>
+                        </tr>
+                        <tr>
+                            <th>確変突入率</th>
+                            <td>{{ userInput.kakuhenEntryRate }}%</td>
+                            <th>確変継続率</th>
+                            <td>{{ userInput.kakuhenContinuationRate }}%</td>
+                        </tr>
+                        <tr>
+                            <th>初当たり時出玉数</th>
+                            <td>{{ userInput.firstJackpotPayout }}個</td>
+                            <th>確変中大当たり確率</th>
+                            <td>{{ userInput.kakuhenJackpotProbability }}%</td>
+                        </tr>
+                        <tr>
+                            <th>確変中大当たり時平均出玉数</th>
+                            <td>
+                                {{ userInput.avgJackpotPayoutDuringRush }}個
+                            </td>
+                            <th>時短回数</th>
+                            <td>{{ userInput.jitanModeRounds }}回</td>
+                        </tr>
+                        <tr>
+                            <th>1玉あたりの値段</th>
+                            <td>{{ userInput.pricePerBall }}円</td>
+                            <th>1玉あたりの換金レート</th>
+                            <td>{{ userInput.exchangeRatePerBall }}</td>
+                        </tr>
+                        <tr>
+                            <th>通常時1kあたりの平均回転数</th>
+                            <td>{{ userInput.avgSpinsPer1000yen }}個</td>
+                            <th>開始時所持金</th>
+                            <td>{{ userInput.startingMoney }}円</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- <pre>userInput: {{ userInput }}</pre> -->
+                <!-- <pre>onceSimulationState: {{ onceSimulationState }}</pre> -->
             </div>
         </el-scrollbar>
     </div>
@@ -426,9 +510,67 @@ const startSimulateOnce = () => {
         -webkit-text-fill-color: transparent;
     }
 
+    &__table {
+        width: 100%;
+        table-layout: fixed;
+
+        tbody {
+            tr {
+                th,
+                td {
+                    padding: 12px 16px;
+                    border: 1px solid #ccc;
+                    vertical-align: middle;
+                }
+
+                $thWidth: 260px;
+
+                th {
+                    background-color: #f9f9f9;
+                    width: $thWidth;
+                }
+
+                td {
+                    width: calc((100% - ($thWidth * 2)) / 2);
+                }
+            }
+        }
+    }
+
+    &__table + &__table {
+        margin-top: 32px;
+    }
+
     @media screen and (max-width: 740px) {
-        &__cpuThinking {
-            font-size: var.vw(70);
+        &__table {
+            tbody {
+                tr {
+                    display: flex;
+                    flex-wrap: wrap;
+
+                    th,
+                    td {
+                        font-size: 12px;
+                        padding: 8px;
+                        border-width: 0.5px;
+                    }
+
+                    th {
+                        width: 150px;
+                        flex-shrink: 0;
+                        background-color: #f9f9f9;
+                    }
+
+                    td {
+                        flex: 1;
+                        min-width: 0;
+                    }
+                }
+            }
+        }
+
+        &__table + &__table {
+            margin-top: 16px;
         }
     }
 }
