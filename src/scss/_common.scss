@@ -126,6 +126,7 @@ select {
 button,
 select {
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .table {
