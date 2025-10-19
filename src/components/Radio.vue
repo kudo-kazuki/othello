@@ -7,6 +7,7 @@ interface Props {
     text: number | string
     value: number | string | boolean
     modelValue: number | string | boolean
+    isDisabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {})
@@ -31,9 +32,10 @@ watch(
 </script>
 
 <template>
-    <div class="Radio">
+    <div class="Radio" :class="{ 'Radio--disabled': isDisabled }">
         <input
             class="Radio__input"
+            :class="{ 'Radio__input--disabled': isDisabled }"
             :id="id"
             type="radio"
             :name="name"
@@ -46,8 +48,14 @@ watch(
 
 <style scoped lang="scss">
 .Radio {
+    line-height: 0;
+
     &__input {
         display: none;
+
+        &--disabled {
+            pointer-events: none;
+        }
     }
 
     &__input:checked + &__label {
@@ -58,6 +66,12 @@ watch(
 
         &:after {
             transform: scale(1);
+        }
+    }
+
+    &__input--disabled:checked + &__label {
+        &:before {
+            border-color: #999;
         }
     }
 
@@ -93,6 +107,19 @@ watch(
             margin-top: -6px;
             transform: scale(0);
             background: rgb(51, 122, 183);
+        }
+    }
+
+    &--disabled &__label {
+        pointer-events: none;
+        color: #999;
+
+        &::before {
+            border-color: #999;
+        }
+
+        &:after {
+            background-color: #999;
         }
     }
 }

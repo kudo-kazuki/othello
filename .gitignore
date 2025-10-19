@@ -49,3 +49,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Rust build artifacts
+src/wasm/target/
+src/wasm/pkg/
+!src/wasm/wasm_pkg/   # ← wasm_pack の成果物は残す
+*.rs.bk
+Cargo.lock

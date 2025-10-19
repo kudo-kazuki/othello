@@ -20,6 +20,7 @@ declare module 'vue' {
     Rose: typeof import('./components/Effect/Effects/Rose.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SalesMan: typeof import('./components/SalesMan.vue')['default']
     SettingStart: typeof import('./components/SettingStart.vue')['default']
     Stone: typeof import('./components/Stone.vue')['default']
   }

@@ -8,7 +8,7 @@ const { windowWidth, deviceType } = useWindowWidthAndDevice()
 
 const desiredSeatCount = ref(1)
 const totalSeatCount = ref(1)
-const occupiedSeatCount = ref(0)
+const remainingSeatCount = ref(0)
 
 // 組み合わせ計算関数
 function combination(n: number, r: number): number {
@@ -23,15 +23,17 @@ function combination(n: number, r: number): number {
 
 const probability = computed(() => {
     const n = totalSeatCount.value
-    const o = occupiedSeatCount.value
+    const r = remainingSeatCount.value // 残り席数
     const d = desiredSeatCount.value
 
-    // 入力バリデーション
     if (n <= 0 || d <= 0) return 0
-    if (o < 0 || o > n) return 0
+    if (r < 0 || r > n) return 0
     if (d > n) return 0
 
-    // o < d のとき「希望席を全部埋める」は不可能 ⇒ 少なくとも1つ空いている確率は1
+    const o = n - r // 埋まってる数に変換
+
+    // 埋まってる席数が希望席数より少ない場合、
+    // 全部埋まることは不可能 ⇒ 確率100%
     if (o < d) return 100
 
     const totalWays = combination(n, o)
@@ -43,12 +45,12 @@ const probability = computed(() => {
     return pAtLeastOneFree * 100
 })
 
-type SeatVarName = 'desiredSeatCount' | 'totalSeatCount' | 'occupiedSeatCount'
+type SeatVarName = 'desiredSeatCount' | 'totalSeatCount' | 'remainingSeatCount'
 
 const seatVars: Record<SeatVarName, typeof desiredSeatCount> = {
     desiredSeatCount,
     totalSeatCount,
-    occupiedSeatCount,
+    remainingSeatCount,
 }
 
 const arithmetic = (name: SeatVarName, method: 'plus' | 'minus') => {
@@ -58,14 +60,14 @@ const arithmetic = (name: SeatVarName, method: 'plus' | 'minus') => {
     const minValues: Record<SeatVarName, number> = {
         desiredSeatCount: 1,
         totalSeatCount: 1,
-        occupiedSeatCount: 0,
+        remainingSeatCount: 0,
     }
 
     // 各変数の最大値（nullなら制限なし）
     const maxValues: Record<SeatVarName, number | null> = {
         desiredSeatCount: totalSeatCount.value,
         totalSeatCount: null,
-        occupiedSeatCount: totalSeatCount.value,
+        remainingSeatCount: totalSeatCount.value,
     }
 
     if (method === 'plus') {
@@ -82,8 +84,27 @@ const arithmetic = (name: SeatVarName, method: 'plus' | 'minus') => {
 
 const reset = () => {
     totalSeatCount.value = 1
-    occupiedSeatCount.value = 1
-    desiredSeatCount.value = 0
+    remainingSeatCount.value = 0
+    desiredSeatCount.value = 1
+    return false
+}
+
+const runSimu = (num: number) => {
+    if (num === 14) {
+        totalSeatCount.value = 14
+        desiredSeatCount.value = 3
+    }
+
+    if (num === 12) {
+        totalSeatCount.value = 12
+        desiredSeatCount.value = 1
+    }
+
+    if (num === 8) {
+        totalSeatCount.value = 8
+        desiredSeatCount.value = 4
+    }
+
     return false
 }
 </script>
@@ -150,26 +171,26 @@ const reset = () => {
             </li>
 
             <li class="Page__inputItem">
-                <label class="Page__inputItemLabel" for="occupiedSeatCount"
-                    >既に埋まってる<br />席の数</label
+                <label class="Page__inputItemLabel" for="remainingSeatCount"
+                    >残り席数</label
                 >
                 <input
                     class="Page__input"
-                    id="occupiedSeatCount"
+                    id="remainingSeatCount"
                     type="number"
                     min="0"
-                    v-model="occupiedSeatCount"
+                    v-model="remainingSeatCount"
                 />
                 <div class="Page__buttons">
                     <button
                         class="Page__button"
-                        @click="arithmetic('occupiedSeatCount', 'plus')"
+                        @click="arithmetic('remainingSeatCount', 'plus')"
                     >
                         ＋
                     </button>
                     <button
                         class="Page__button Page__button--minus"
-                        @click="arithmetic('occupiedSeatCount', 'minus')"
+                        @click="arithmetic('remainingSeatCount', 'minus')"
                     >
                         －
                     </button>
@@ -182,6 +203,20 @@ const reset = () => {
         </p>
 
         <div class="Page__result">{{ probability }}%</div>
+
+        <div style="margin-top: 30px">
+            <ul>
+                <li>
+                    <a href="" @click.prevent="runSimu(14)">14</a>
+                </li>
+                <li>
+                    <a href="" @click.prevent="runSimu(12)">12</a>
+                </li>
+                <li>
+                    <a href="" @click.prevent="runSimu(8)">8</a>
+                </li>
+            </ul>
+        </div>
     </div>
 </template>
 <style lang="scss" scoped>
